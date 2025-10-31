@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Secreto</title>
+<link href="https://fonts.googleapis.com/css2?family=Remachine+Script&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-black: #000;
+  --pink-soft: #ffb6c1;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background: var(--bg-black);
+  color: white;
+  font-family: "Segoe UI", Roboto, Arial, sans-serif;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+#secreto, #amor {
+  height: 100vh;
+  width: 100%;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+#amor {
+  display: none;
+}
+
+#contador {
+  font-family: 'Remachine Script', cursive;
+  font-size: 28px;
+  color: #ff8fcf;
+  text-shadow: 0 0 10px rgba(255,182,193,0.9), 0 0 20px rgba(255,105,180,0.6);
+  margin: 0 0 10px 0;
+  animation: latido 2000ms infinite;
+  text-align: center;
+}
+
+@keyframes latido {
+  0%,100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
+
+h1 {
+  margin: 6px 0 14px 0;
+  font-size: 28px;
+  letter-spacing: 1px;
+}
+
+p.cifrado {
+  max-width: 760px;
+  margin: 8px 20px 18px;
+  color: rgba(255,255,255,0.9);
+}
+
+input[type="password"] {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: none;
+  outline: none;
+  font-size: 16px;
+  width: 220px;
+}
+
+button {
+  margin-left: 10px;
+  padding: 10px 18px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  background: linear-gradient(135deg,#ffb6c1,#ff8fcf);
+  color: #111;
+  font-weight: 600;
+}
+
+button:hover {
+  filter: brightness(0.95);
+}
+
+.poema-carta {
+  position: absolute;
+  top: 40px;
+  right: 20px;
+  width: 540px;
+  max-width: calc(100% - 40px);
+  background-color: rgb(240, 184, 232);
+  color: #ea3489;
+  font-family: 'Remachine Script', cursive;
+  font-size: 15px;
+  padding: 26px;
+  border-radius: 24px;
+  box-shadow: 0 10px 35px rgba(0,0,0,0.5);
+  text-align: left;
+  z-index: 2000;
+  line-height: 1.65;
+  overflow-y: auto; 
+  max-height: 80vh; 
+  overflow-wrap: break-word;
+  display: none;
+}
+
+/* FRASES FLOTANTES */
+.text-bubble {
+  position: absolute;
+  font-family: 'Remachine Script', cursive;
+  color: #ff69b4;
+  opacity: 0;
+  pointer-events: none;
+  text-shadow: 0 0 8px rgba(255,105,180,0.85);
+  z-index: 100;
+  white-space: nowrap;
+  transition: opacity 0.5s linear;
+}
+
+@keyframes floatUp {
+  0% { transform: translateY(0) scale(0.95); opacity: 0; }
+  10% { opacity: 1; }
+  80% { transform: translateY(-110px) scale(1.01); opacity: 1; }
+  100% { transform: translateY(-210px) scale(1.03); opacity: 0; }
+}
+
+/* FOTOS FLOTANTES */
+.floating-photo {
+  position: absolute;
+  object-fit: cover;
+  border-radius: 14px;
+  opacity: 0;
+  pointer-events: none;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.6);
+  z-index: 90;
+  transition: opacity 0.4s linear, transform 9s ease-in-out;
+}
+
+@media (max-width: 700px) {
+  .poema-carta {
+    right: 10px;
+    left: 10px;
+    top: 20px;
+    width: auto;
+    font-size: 14px;
+    padding: 18px;
+  }
+  #contador { font-size: 22px; }
+  h1 { font-size: 22px; }
+}
+</style>
+</head>
+<body>
+<div id="secreto">
+  <p id="contador">—</p>
+  <h1>🔒 Secreto Oculto 🔒</h1>
+  <p class="cifrado">YNJRJ ZR UWNRHNUNT UJWT RZRHF ZR KNRFP, HFXN HTQT FPLT JYJWRT, HTQT PT QZJXYWT PT XJWF.</p>
+  <div>
+    <input type="password" id="password" placeholder="Contraseña">
+    <button id="entrarBtn">Entrar</button>
+  </div>
+</div>
+
+<div id="amor">
+  <audio id="musica" src="musica.mp3" preload="auto" loop></audio>
+  <div class="poema-carta" id="poema-carta"></div>
+</div>
+
+<script>
+const startDate = new Date(2025, 5, 2, 0, 0, 0);
+
+function monthsBetween(start, end) {
+  let years = end.getFullYear() - start.getFullYear();
+  let months = end.getMonth() - start.getMonth();
+  let totalMonths = years * 12 + months;
+  if (end.getDate() < start.getDate()) totalMonths -= 1;
+  const intermediate = new Date(start.getTime());
+  intermediate.setMonth(intermediate.getMonth() + totalMonths);
+  return { months: totalMonths, intermediate };
+}
+
+function actualizarContador() {
+  const ahora = new Date();
+  if (ahora < startDate) {
+    document.getElementById('contador').textContent = "Aún no empezó la cuenta.";
+    return;
+  }
+  const { months, intermediate } = monthsBetween(startDate, ahora);
+  let restoMs = ahora - intermediate;
+  if (restoMs < 0) restoMs = 0;
+  const dias = Math.floor(restoMs / (24*3600*1000));
+  restoMs -= dias * 24*3600*1000;
+  const horas = Math.floor(restoMs / (3600*1000));
+  restoMs -= horas * 3600*1000;
+  const minutos = Math.floor(restoMs / (60*1000));
+  restoMs -= minutos * 60*1000;
+  const segundos = Math.floor(restoMs / 1000);
+  document.getElementById('contador').textContent = `💞 Llevamos ${months} meses, ${dias} días, ${horas} horas, ${minutos} minutos y ${segundos} segundos 💞`;
+}
+
+let contadorInterval = setInterval(actualizarContador, 1000);
+actualizarContador();
+
+const frases = [
+  "Eres mi razón para sonreír.","Cada día a tu lado es mágico.","Tu voz es mi lugar favorito.",
+  "Mi corazón te pertenece.","Eres el sueño que no quiero despertar.","Tu mirada me calma y me enamora.",
+  "Siempre tú, en cada pensamiento.","No hay nadie como tú.","Te amo en cada segundo.",
+  "Mi mundo eres tú.","Tu amor es mi refugio.","Me encantas más cada día.","Eres mi inspiración constante.",
+  "Cada momento contigo es único.","Mi felicidad eres tú.","Tu risa ilumina mi vida.","Eres mi calma en la tormenta.",
+  "Tu amor me hace fuerte.","Mi mundo gira a tu alrededor.","Eres mi estrella más brillante.",
+  "Mi vida tiene sentido por ti.","Tu abrazo es mi hogar.","Me pierdo en tu mirada.",
+  "Eres el motivo de mis sueños.","Tu amor da color a mis días.","Sin ti, nada tiene sentido.",
+  "Tu nombre es mi pensamiento favorito.","Eres la melodía que alegra mi alma.","Tu sonrisa ilumina mi universo.",
+  "Quisiera detener el tiempo contigo.","Eres la poesía que nunca termina.","Cada día a tu lado es un regalo.",
+  "Tus palabras son mi consuelo.","Contigo todo es más bonito.","Tu ternura me salva del ruido.",
+  "Si cierras los ojos, estoy ahí.","Eres mi pensamiento de medianoche.","Tu presencia convierte todo en paz.",
+  "Eres mi impulso y mi calma a la vez.","Tu abrazo lo cura todo.","Tu mirada escribe poemas en mi piel.",
+  "Eres mi refugio y mi valentía.","La vida tiene otro sabor contigo.","Tu cariño me hace mejor persona.",
+  "Tu risa es mi canción favorita.","Eres el milagro que necesitaba.","Me quedo en tu latido.","Tu mano hace que todo sea posible."
+];
+
+const MAX_FOTOS = 35;
+const fotosMostrandose = new Set();
+
+function hayColisionRect(nuevo, rects) {
+  return rects.some(rect => !(nuevo.right < rect.left || nuevo.left > rect.right || nuevo.bottom < rect.top || nuevo.top > rect.bottom));
+}
+
+function encontrarPosicionLibre(ancho, alto) {
+  const elementos = Array.from(document.querySelectorAll('.text-bubble, .floating-photo'));
+  const carta = document.getElementById('poema-carta');
+  if (carta) elementos.push(carta);
+  const rects = elementos.map(el => {
+    const r = el.getBoundingClientRect();
+    return { left: r.left, top: r.top, right: r.right, bottom: r.bottom };
+  });
+  for (let i = 0; i < 120; i++) {
+    const left = Math.max(6, Math.random() * (window.innerWidth - ancho - 6));
+    const top = Math.max(6, Math.random() * (window.innerHeight - alto - 6));
+    const nuevo = { left, top, right: left + ancho, bottom: top + alto };
+    if (!hayColisionRect(nuevo, rects)) return { left, top };
+  }
+  return { left: Math.random() * (window.innerWidth - ancho), top: Math.random() * (window.innerHeight - alto) };
+}
+
+let fraseIntervalHandle = null;
+let fotoIntervalHandle = null;
+
+function crearFrase() {
+  const amor = document.getElementById('amor');
+  const elem = document.createElement('div');
+  elem.className = 'text-bubble';
+  const texto = frases[Math.floor(Math.random() * frases.length)];
+  const fontSize = 14 + Math.floor(Math.random() * 12);
+  elem.style.fontSize = fontSize + 'px';
+  const ancho = Math.min(320, 40 + texto.length * (fontSize * 0.6));
+  const alto = fontSize + 12;
+  const pos = encontrarPosicionLibre(ancho, alto);
+  elem.style.left = pos.left + 'px';
+  elem.style.top = pos.top + 'px';
+  elem.style.animation = `floatUp ${6 + Math.random() * 4}s ease-in-out forwards`;
+  amor.appendChild(elem);
+  let i = 0;
+  const velocidad = 40 + Math.random() * 40;
+  const escribir = setInterval(() => {
+    elem.textContent = texto.substring(0, i+1);
+    i++;
+    if (i >= texto.length) clearInterval(escribir);
+  }, velocidad);
+  setTimeout(() => {
+    elem.style.opacity = '0';
+    setTimeout(() => { try{ elem.remove(); } catch(e){} }, 900);
+  }, 8000 + Math.random()*2000);
+}
+
+function crearFoto() {
+  const amor = document.getElementById('amor');
+  const img = document.createElement('img');
+  img.className = 'floating-photo';
+
+  let num;
+  const disponibles = [];
+  for (let i = 1; i <= MAX_FOTOS; i++) {
+    if (!fotosMostrandose.has(i)) disponibles.push(i);
+  }
+
+  if (disponibles.length === 0) return;
+
+  num = disponibles[Math.floor(Math.random() * disponibles.length)];
+  fotosMostrandose.add(num);
+
+  img.src = `foto${num}.jpg`;
+  const size = 70 + Math.random() * 120;
+  img.style.width = size + 'px';
+  img.style.height = size + 'px';
+  const pos = encontrarPosicionLibre(size, size);
+  img.style.left = pos.left + 'px';
+  img.style.top = pos.top + 'px';
+  amor.appendChild(img);
+
+  setTimeout(() => {
+    img.style.opacity = '1';
+    img.style.transform = 'translateY(-40px)';
+  }, 50);
+
+  setTimeout(() => {
+    img.style.opacity = '0';
+    setTimeout(() => { 
+      try { 
+        img.remove(); 
+        fotosMostrandose.delete(num);
+      } catch(e) {}
+    }, 800);
+  }, 9000 + Math.random() * 3000);
+}
+
+function iniciarAnimaciones() {
+  fraseIntervalHandle = setInterval(crearFrase, 600);
+  fotoIntervalHandle = setInterval(crearFoto, 1200);
+}
+
+const cartaTexto = `Mi amor
+Al principio, un nombre es solo un sonido sin significado.
+Pero cuando lo dices una y otra vez, cuando lo asocias con una sonrisa, con un recuerdo, con un latido… ese nombre se convierte en algo imposible de olvidar.
+
+Eso me pasó contigo. Al principio, tu nombre era solo una palabra más entre tantas, pero bastó un momento contigo para que cobrara sentido.
+Desde entonces, tu nombre suena diferente, tiene un ritmo especial, una melodía que solo mi corazón reconoce. Y cada vez que lo pienso o lo 
+pronuncio, me transmite calma, alegría, y esa sensación tan extraña pero tan bonita de saber que estoy justo donde quiero estar.
+
+Tú llegaste de forma inesperada, sin anunciarte, sin ruido, pero con una presencia que lo cambió todo. Y desde entonces, mis días se sienten más 
+ligeros, mis pensamientos más dulces, y mi vida más completa. Me gusta cómo logras que las cosas simples tengan significado, basta una risa 
+tuya o una mirada para que pongas mi mundo de cabeza.
+
+Y aunque aún estamos conociéndonos, descubriéndonos paso a paso, siento que contigo puedo construir algo verdadero. No busco una historia perfecta. 
+Porque sé que el amor real no se trata de eso, se trata de elegirnos incluso cuando no todo es fácil, de apoyarnos cuando  el mundo se vuelve pesado, 
+de entendernos cuando las palabras no bastan.
+
+Lo que espero de nosotros es que este amor crezca con raíces fuertes, que sea duradero y sincero. Quiero que caminemos juntos con paciencia, aprendiendo el uno del otro, con respeto, 
+con cariño y con ganas de mejorar cada día. Quiero que seamos ese tipo de pareja que se apoya en todo, que celebra los  logros y se acompaña en las caídas, que no huye cuando hay dudas, sino que se queda para resolverlas.
+
+Sueño con que este amor se convierta en un refugio mutuo, en un lugar donde ambos podamos ser nosotros mismos sin miedo.
+Que cada abrazo sea un descanso, cada beso una promesa, y cada mirada un recordatorio de que vale la pena seguir intentándolo.
+
+Y sí, algún día, me gustaría que lo que hoy empezamos siga creciendo tanto que podamos llamarlo “hogar”.
+Que el tiempo nos encuentre de la mano, formando una familia, construyendo algo que nazca de la confianza, del amor y de la entrega mutua.
+
+Como dijo Mario Benedetti: “Me gusta la gente capaz de entender que el mayor error del ser humano es intentar sacarse de la cabeza aquello que no sale del corazón.”
+Y tú… tú eres eso para mí: algo que no quiero ni puedo sacar del corazón.
+Porque desde que llegaste, ya no quiero imaginar mis días sin ti.
+
+A veces pienso en el futuro, y me da paz imaginarlo contigo. No como un sueño lejano, sino como algo que poco a poco estamos construyendo. Con nuestras risas, nuestras 
+charlas, nuestras pequeñas locuras. Con cada momento que compartimos y cada promesa silenciosa que se forma cuando nos miramos a los ojos.
+
+No quiero correr, ni prometer imposibles, pero sí quiero que sepas que mi intención es quedarme, cuidarte y seguir eligiéndote.
+Que cuando algo nos cueste, estaré ahí.
+Que cuando necesites apoyo, tendrás mis brazos.
+Que cuando el mundo se ponga difícil, sabrás que no estás sola.
+
+Porque tú eres mi calma en los días grises, mi pensamiento bonito en medio del caos, y la razón por la que creo que el amor vale la pena.
+Tu nombre ya está grabado en mi historia, y no como un capítulo pasajero, sino como uno que quiero seguir escribiendo, con paciencia, con ternura y con todo mi corazón.
+Porque contigo, incluso lo cotidiano se vuelve especial.
+
+TE AMO`;
+
+
+function escribirPoemaCompleto() {
+  const cartaDiv = document.getElementById('poema-carta');
+  cartaDiv.style.display = 'block';
+  cartaDiv.style.opacity = '0';
+  cartaDiv.style.transition = 'opacity 1.5s ease';
+  setTimeout(() => cartaDiv.style.opacity = '1', 100);
+  cartaDiv.innerHTML = '';
+
+  cartaDiv.style.overflowY = 'auto';
+  cartaDiv.style.maxHeight = '80vh';
+  cartaDiv.style.scrollBehavior = 'smooth';
+
+  const parrafos = cartaTexto.split(/\n\s*\n/);
+  let indiceParrafo = 0;
+  const visibles = [];
+  const maxVisibles = 4;
+
+  function escribirParrafo(texto, callback) {
+    const p = document.createElement('p');
+    p.style.opacity = '1';
+    p.style.marginBottom = '10px';
+    cartaDiv.appendChild(p);
+
+    let idx = 0;
+    const velocidad = 18;
+    const escribir = setInterval(() => {
+      p.innerHTML = texto.substring(0, idx + 1).replace(/\n/g, '<br>');
+      idx++;
+      cartaDiv.scrollTop = cartaDiv.scrollHeight;
+
+      if (idx >= texto.length) {
+        clearInterval(escribir);
+        if (callback) setTimeout(callback, 1000);
+      }
+    }, velocidad);
+
+    return p;
+  }
+  
+  function siguiente() {
+    if (indiceParrafo >= parrafos.length) {
+      mostrarVideoFinal();
+      return;
+    }
+
+    const texto = parrafos[indiceParrafo];
+    const nuevoP = escribirParrafo(texto, () => {
+      indiceParrafo++;
+      siguiente();
+    });
+    visibles.push(nuevoP);
+
+    if (visibles.length > maxVisibles) quitarPrimerParrafoConFade();
+  }
+
+  function mostrarVideoFinal() {
+    const contenedorVideo = document.createElement('div');
+    contenedorVideo.style.textAlign = 'center';
+    contenedorVideo.style.marginTop = '30px';
+
+    const video = document.createElement('video');
+    video.src = 'video.mp4';
+    video.controls = true;
+    video.autoplay = true;
+    video.loop = true;
+    video.muted = true;
+    video.style.maxWidth = '80%';
+    video.style.borderRadius = '18px';
+    video.style.boxShadow = '0 6px 18px rgba(0,0,0,0.2)';
+    video.style.opacity = '0';
+    video.style.transition = 'opacity 2s ease';
+
+    contenedorVideo.appendChild(video);
+    cartaDiv.appendChild(contenedorVideo);
+
+    cartaDiv.scrollTop = cartaDiv.scrollHeight;
+    setTimeout(() => {
+      cartaDiv.scrollTop = cartaDiv.scrollHeight + 300;
+      video.style.opacity = '1';
+    }, 600);
+  }
+  siguiente();
+}
+
+
+function verificar() {
+  const pass = document.getElementById('password').value || '';
+  const mensaje = document.getElementById('mensaje');
+  const hoy = new Date().toDateString();
+
+  const datos = JSON.parse(localStorage.getItem('intentosData')) || {
+    fecha: hoy,
+    intentos: 0
+  };
+
+  if (datos.fecha !== hoy) {
+    datos.fecha = hoy;
+    datos.intentos = 0;
+  }
+
+  if (datos.intentos >= 2 && pass.trim() !== 'VMRG') {
+    alert('Ya usaste los 2 intentos de hoy 💔. Intenta de nuevo mañana.');
+    return;
+  }
+
+  if (pass.trim() === 'VMRG') {
+    alert('Desbloqueo exitoso con código especial 🔓');
+    document.getElementById('secreto').style.display = 'none';
+    if (typeof contadorInterval !== 'undefined' && contadorInterval) {
+      clearInterval(contadorInterval);
+      contadorInterval = null;
+    }
+    const amor = document.getElementById('amor');
+    amor.style.display = 'block';
+    document.body.style.backgroundImage = "url('fondo.jpg')";
+
+    const musica = document.getElementById('musica');
+    if (musica) musica.play().catch(() => {});
+
+    if (typeof cartaTexto !== 'undefined' && cartaTexto.trim() !== '') {
+      escribirPoemaCompleto();
+    } else {
+      console.error("⚠️ No hay texto en la variable cartaTexto");
+    }
+
+    if (typeof iniciarAnimaciones === 'function') iniciarAnimaciones();
+
+  } else if (pass.trim().toLowerCase() === 'sempiterno') {
+    document.getElementById('secreto').style.display = 'none';
+    if (typeof contadorInterval !== 'undefined' && contadorInterval) {
+      clearInterval(contadorInterval);
+      contadorInterval = null;
+    }
+    const amor = document.getElementById('amor');
+    amor.style.display = 'block';
+    document.body.style.backgroundImage = "url('fondo.jpg')";
+
+    const musica = document.getElementById('musica');
+    if (musica) musica.play().catch(() => {});
+
+    if (typeof cartaTexto !== 'undefined' && cartaTexto.trim() !== '') {
+      escribirPoemaCompleto();
+    } else {
+      console.error("⚠️ No hay texto en la variable cartaTexto");
+    }
+
+    if (typeof iniciarAnimaciones === 'function') iniciarAnimaciones();
+
+    datos.intentos++; 
+
+  } else {
+    alert('Contraseña incorrecta 💔');
+    datos.intentos++; 
+  }
+
+  localStorage.setItem('intentosData', JSON.stringify(datos));
+}
+document.getElementById("entrarBtn").addEventListener("click", verificar);
+
+document.getElementById("password").addEventListener("keypress", function (e) {
+  if (e.key === "Enter") {
+    verificar();
+  }
+});
+
+</script>
+</body>
+</html>
